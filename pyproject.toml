@@ -4,12 +4,26 @@ build-backend = "hatchling.build"
 
 [project]
 name = "peerglass"
-version = "2.0.0"
-description = "PeerGlass — Multi-RIR RDAP MCP Server: RDAP + RPKI + BGP + History + PeeringDB"
+version = "1.0.0"
+description = "PeerGlass — Internet Resource Intelligence: RDAP + RPKI + BGP + PeeringDB for all 5 RIRs"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-keywords = ["mcp", "whois", "rdap", "rir", "internet", "networking", "rpki", "bgp"]
+keywords = [
+    "rdap", "whois", "bgp", "rpki", "mcp",
+    "rir", "internet-registry", "ip-lookup", "asn",
+    "network-intelligence", "peering", "ixp",
+    "afrinic", "apnic", "arin", "lacnic", "ripe-ncc"
+]
+
+authors = [
+    { name = "Duksh Koonjoobeeharry", email = "" }
+]
+
+maintainers = [
+    { name = "Duksh Koonjoobeeharry", email = "" }
+]
+
 dependencies = [
     "mcp[cli]>=1.0.0",
     "httpx>=0.27.0",
@@ -25,7 +39,11 @@ peerglass = "server:main"
 packages = ["."]
 
 [project.urls]
-Repository = "https://github.com/peerglass/peerglass"
+Homepage      = "https://github.com/duksh/peerglass"
+Repository    = "https://github.com/duksh/peerglass"
+Issues        = "https://github.com/duksh/peerglass/issues"
+Discussions   = "https://github.com/duksh/peerglass/discussions"
+Author        = "https://www.linkedin.com/in/duksh/"
 "AFRINIC RDAP" = "https://rdap.afrinic.net/rdap"
 "APNIC RDAP"   = "https://rdap.apnic.net"
 "ARIN RDAP"    = "https://rdap.arin.net/registry"

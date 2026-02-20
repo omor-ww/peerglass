@@ -331,6 +331,59 @@ class IPv4StatsInput(BaseModel):
         default=ResponseFormat.MARKDOWN,
         description="'markdown' for human-readable, 'json' for machine-readable",
     )
+    include_blocks: bool = Field(
+        default=False,
+        description=(
+            "If true, include raw delegated IPv4 block rows from the selected RIR. "
+            "Requires rir_filter to be set."
+        ),
+    )
+    status_filter: Optional[str] = Field(
+        default=None,
+        description=(
+            "Optional IPv4 status filter for block rows: allocated, assigned, available. "
+            "'free' is normalized to 'available'."
+        ),
+    )
+    country_filter: Optional[str] = Field(
+        default=None,
+        description="Optional 2-letter ISO country code filter for IPv4 block rows (e.g. 'GH', 'ZA').",
+    )
+    limit: int = Field(
+        default=100,
+        description="Maximum number of IPv4 block rows to return when include_blocks=true.",
+        ge=1,
+        le=5000,
+    )
+    offset: int = Field(
+        default=0,
+        description="Pagination offset for IPv4 block rows when include_blocks=true.",
+        ge=0,
+        le=1_000_000,
+    )
+
+    @field_validator("status_filter")
+    @classmethod
+    def normalize_status_filter(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or not v:
+            return None
+        status = v.strip().lower()
+        if status == "free":
+            status = "available"
+        allowed = {"allocated", "assigned", "available"}
+        if status not in allowed:
+            raise ValueError("status_filter must be one of: allocated, assigned, available, free")
+        return status
+
+    @field_validator("country_filter")
+    @classmethod
+    def normalize_country_filter(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or not v:
+            return None
+        country = v.strip().upper()
+        if len(country) != 2 or not country.isalpha():
+            raise ValueError("country_filter must be a 2-letter ISO country code")
+        return country
 
 
 class PrefixOverviewInput(BaseModel):
@@ -402,6 +455,17 @@ class TransferDetectResult(BaseModel):
     notes: List[str]                       = Field(default_factory=list)
 
 
+class IPv4DelegatedBlock(BaseModel):
+    """A single IPv4 delegated row from an RIR extended stats file."""
+    rir: str
+    country: Optional[str]                 = None
+    start_ip: str
+    end_ip: str
+    address_count: int
+    date: Optional[str]                    = None
+    status: str
+
+
 class RIRDelegationStats(BaseModel):
     """IPv4, IPv6, and ASN delegation statistics for one RIR."""
     rir: str
@@ -426,6 +490,12 @@ class GlobalIPv4Stats(BaseModel):
     global_ipv4_prefixes: int             = 0
     global_ipv6_prefixes: int             = 0
     global_asns: int                      = 0
+    ipv4_blocks: List[IPv4DelegatedBlock] = Field(default_factory=list)
+    blocks_total: int                     = 0
+    blocks_returned: int                  = 0
+    blocks_limit: Optional[int]           = None
+    blocks_offset: Optional[int]          = None
+    blocks_filters: dict[str, Any]        = Field(default_factory=dict)
     errors: List[str]                      = Field(default_factory=list)
 
 

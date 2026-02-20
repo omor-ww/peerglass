@@ -91,6 +91,7 @@ Quick tool selection guide:
   Full ownership history?            → rir_prefix_history
   Ever been transferred?             → rir_detect_transfers
   Global IPv4/IPv6 exhaustion stats? → rir_ipv4_stats
+  Raw delegated IPv4 blocks?         → rir_ipv4_stats (include_blocks=true + rir_filter)
   Prefix parent/child hierarchy?     → rir_prefix_overview
   Peering policy + IXP presence?     → rir_peering_info
   IXPs in a country or by name?      → rir_ixp_lookup
@@ -817,6 +818,12 @@ async def rir_ipv4_stats(params: IPv4StatsInput) -> str:
         params (IPv4StatsInput):
             - rir_filter (str, optional): Filter to one RIR ('AFRINIC', 'APNIC',
               'ARIN', 'LACNIC', 'RIPE'). Leave empty for all 5.
+            - include_blocks (bool): Include raw delegated IPv4 blocks for the selected RIR.
+              Requires rir_filter to be set.
+            - status_filter (str, optional): allocated | assigned | available (free is normalized).
+            - country_filter (str, optional): 2-letter country code filter (e.g. 'GH', 'ZA').
+            - limit (int): Max number of block rows when include_blocks=true.
+            - offset (int): Pagination offset for block rows.
             - response_format (str): 'markdown' (default) or 'json'
 
     Returns:
@@ -831,17 +838,38 @@ async def rir_ipv4_stats(params: IPv4StatsInput) -> str:
                          "stats_date": str}],
                "global_ipv4_prefixes": int,
                "global_ipv6_prefixes": int,
-               "global_asns": int
+               "global_asns": int,
+               "ipv4_blocks": [
+                 {"rir": str, "country": str|null, "start_ip": str, "end_ip": str,
+                  "address_count": int, "date": str|null, "status": str}
+               ],
+               "blocks_total": int,
+               "blocks_returned": int,
+               "blocks_limit": int|null,
+               "blocks_offset": int|null,
+               "blocks_filters": {"rir_filter": str|null, "status_filter": str|null, "country_filter": str|null}
              }
     """
     rir_filter = (params.rir_filter or "").upper().strip() or "all"
-    cache_key  = cache_module.make_ipv4stat_key(rir_filter)
+    cache_key  = cache_module.make_ipv4stat_key(
+        rir_filter=rir_filter,
+        include_blocks=params.include_blocks,
+        status_filter=params.status_filter,
+        country_filter=params.country_filter,
+        limit=params.limit,
+        offset=params.offset,
+    )
     cached     = cache_module.get(cache_key)
     if cached:
         return cached["json"] if params.response_format == ResponseFormat.JSON else cached["markdown"]
 
     result = await rir_client.get_global_ipv4_stats(
-        rir_filter=params.rir_filter or None
+        rir_filter=params.rir_filter or None,
+        include_blocks=params.include_blocks,
+        status_filter=params.status_filter,
+        country_filter=params.country_filter,
+        limit=params.limit,
+        offset=params.offset,
     )
     md  = format_ipv4_stats_md(result)
     jsn = to_json(result)

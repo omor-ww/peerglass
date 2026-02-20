@@ -566,6 +566,33 @@ def format_ipv4_stats_md(result: GlobalIPv4Stats) -> str:
                 lines.append(f"- ⚠️ {e}\n")
         lines.append("\n")
 
+    if result.ipv4_blocks:
+        lines.append("---\n\n### 🧾 Delegated IPv4 Blocks (Filtered)\n\n")
+        lines.append(
+            f"- **Rows returned:** {_fmt_int(result.blocks_returned)} / {_fmt_int(result.blocks_total)}\n"
+        )
+        if result.blocks_limit is not None:
+            lines.append(f"- **Pagination:** limit={result.blocks_limit}, offset={result.blocks_offset or 0}\n")
+
+        filters = result.blocks_filters or {}
+        if filters:
+            lines.append(
+                f"- **Filters:** RIR={filters.get('rir_filter') or 'N/A'}, "
+                f"status={filters.get('status_filter') or 'any'}, "
+                f"country={filters.get('country_filter') or 'any'}\n"
+            )
+
+        lines.append(
+            "\n| RIR | Country | Start IP | End IP | Addresses | Status | Date |\n"
+            "|-----|---------|----------|--------|-----------|--------|------|\n"
+        )
+        for b in result.ipv4_blocks:
+            lines.append(
+                f"| {b.rir} | {b.country or '-'} | `{b.start_ip}` | `{b.end_ip}` "
+                f"| {_fmt_int(b.address_count)} | {b.status} | {b.date or '-'} |\n"
+            )
+        lines.append("\n")
+
     lines.append(
         "---\n\n**What does this mean?**\n\n"
         "The global IPv4 address pool is essentially exhausted at the IANA level. "

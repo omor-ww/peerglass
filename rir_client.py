@@ -18,13 +18,14 @@ The parallel engine is the core of this server:
 
 from __future__ import annotations
 import asyncio
+import ipaddress
 import time
 from typing import Any, Optional
 import httpx
 
 from models import RIRName, RIRQueryResult, RPKIResult, RPKIValidity, BGPStatusResult, BGPPrefix, OrgResource, \
     HistoricalEvent, PrefixHistoryResult, TransferEvent, TransferDetectResult, \
-    RIRDelegationStats, GlobalIPv4Stats, RelatedPrefix, PrefixOverviewResult, \
+    RIRDelegationStats, GlobalIPv4Stats, IPv4DelegatedBlock, RelatedPrefix, PrefixOverviewResult, \
     IXPRecord, PeeringInfoResult, IXPLookupResult, NetworkHealthResult, \
     ChangeMonitorResult, FieldDelta
 
@@ -944,7 +945,10 @@ async def _fetch_rir_delegation_stats(
     client: httpx.AsyncClient,
     rir: str,
     url: str,
-) -> RIRDelegationStats:
+    include_blocks: bool = False,
+    status_filter: Optional[str] = None,
+    country_filter: Optional[str] = None,
+) -> tuple[RIRDelegationStats, list[IPv4DelegatedBlock]]:
     """
     Fetch and parse the NRO Extended Delegation Stats file for one RIR.
 
@@ -959,6 +963,7 @@ async def _fetch_rir_delegation_stats(
     We parse both to build a complete picture.
     """
     errors: list[str] = []
+    ipv4_blocks: list[IPv4DelegatedBlock] = []
     stats_date: Optional[str] = None
     ipv4_allocated = ipv4_assigned = ipv4_available = ipv4_total = 0
     ipv6_allocated = ipv6_total = 0
@@ -969,7 +974,7 @@ async def _fetch_rir_delegation_stats(
                                 headers={"User-Agent": DEFAULT_HEADERS["User-Agent"]})
         if resp.status_code != 200:
             errors.append(f"HTTP {resp.status_code} from {rir} delegation stats")
-            return RIRDelegationStats(rir=rir, region=RIR_REGIONS.get(rir, ""), errors=errors)
+            return RIRDelegationStats(rir=rir, region=RIR_REGIONS.get(rir, ""), errors=errors), []
 
         for line in resp.text.splitlines():
             line = line.strip()
@@ -1018,6 +1023,33 @@ async def _fetch_rir_delegation_stats(
                     ipv4_assigned += value
                 elif "available" in status_field or "free" in status_field:
                     ipv4_available += value
+
+                if include_blocks:
+                    normalized_status = "available" if ("available" in status_field or "free" in status_field) else status_field
+                    country = parts[1].upper() if len(parts) > 1 and parts[1] != "*" else None
+
+                    if status_filter and normalized_status != status_filter:
+                        continue
+                    if country_filter and country != country_filter:
+                        continue
+
+                    try:
+                        start_ip = ipaddress.ip_address(parts[3])
+                        end_ip = start_ip + (value - 1)
+                    except ValueError:
+                        continue
+
+                    ipv4_blocks.append(
+                        IPv4DelegatedBlock(
+                            rir=rir,
+                            country=country,
+                            start_ip=str(start_ip),
+                            end_ip=str(end_ip),
+                            address_count=value,
+                            date=parts[5] if len(parts) > 5 else None,
+                            status=normalized_status,
+                        )
+                    )
             elif type_field == "ipv6":
                 if "allocated" in status_field or "assigned" in status_field:
                     ipv6_allocated += 1  # Count distinct IPv6 records
@@ -1043,10 +1075,17 @@ async def _fetch_rir_delegation_stats(
         asn_total        = asn_total,
         stats_date       = stats_date,
         errors           = errors,
-    )
+    ), ipv4_blocks
 
 
-async def get_global_ipv4_stats(rir_filter: Optional[str] = None) -> GlobalIPv4Stats:
+async def get_global_ipv4_stats(
+    rir_filter: Optional[str] = None,
+    include_blocks: bool = False,
+    status_filter: Optional[str] = None,
+    country_filter: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> GlobalIPv4Stats:
     """
     Fetch and aggregate IPv4/IPv6/ASN delegation statistics from all 5 RIRs.
 
@@ -1060,6 +1099,22 @@ async def get_global_ipv4_stats(rir_filter: Optional[str] = None) -> GlobalIPv4S
     If rir_filter is set, only that RIR's stats are fetched.
     """
     queried_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    status_filter = (status_filter or "").lower() or None
+    country_filter = (country_filter or "").upper() or None
+
+    if include_blocks and not rir_filter:
+        return GlobalIPv4Stats(
+            queried_at=queried_at,
+            errors=["include_blocks=true requires rir_filter to target a single RIR"],
+            blocks_limit=limit,
+            blocks_offset=offset,
+            blocks_filters={
+                "rir_filter": None,
+                "status_filter": status_filter,
+                "country_filter": country_filter,
+            },
+        )
+
     targets = {
         k: v for k, v in NRO_DELEGATION_STATS.items()
         if not rir_filter or k == rir_filter.upper()
@@ -1067,12 +1122,25 @@ async def get_global_ipv4_stats(rir_filter: Optional[str] = None) -> GlobalIPv4S
 
     async with httpx.AsyncClient() as client:
         tasks = [
-            _fetch_rir_delegation_stats(client, rir, url)
+            _fetch_rir_delegation_stats(
+                client,
+                rir,
+                url,
+                include_blocks=include_blocks,
+                status_filter=status_filter,
+                country_filter=country_filter,
+            )
             for rir, url in targets.items()
         ]
-        rir_stats = list(await asyncio.gather(*tasks))
+        gathered = list(await asyncio.gather(*tasks))
+
+    rir_stats = [stat for stat, _ in gathered]
+    all_blocks = [block for _, blocks in gathered for block in blocks]
 
     all_errors = [e for r in rir_stats for e in r.errors]
+
+    blocks_total = len(all_blocks)
+    paginated_blocks = all_blocks[offset:offset + limit] if include_blocks else []
 
     return GlobalIPv4Stats(
         queried_at            = queried_at,
@@ -1080,6 +1148,16 @@ async def get_global_ipv4_stats(rir_filter: Optional[str] = None) -> GlobalIPv4S
         global_ipv4_prefixes  = sum(r.ipv4_total_prefixes for r in rir_stats),
         global_ipv6_prefixes  = sum(r.ipv6_total_prefixes for r in rir_stats),
         global_asns           = sum(r.asn_total for r in rir_stats),
+        ipv4_blocks           = paginated_blocks,
+        blocks_total          = blocks_total if include_blocks else 0,
+        blocks_returned       = len(paginated_blocks),
+        blocks_limit          = limit if include_blocks else None,
+        blocks_offset         = offset if include_blocks else None,
+        blocks_filters        = {
+            "rir_filter": (rir_filter or "").upper() or None,
+            "status_filter": status_filter,
+            "country_filter": country_filter,
+        } if include_blocks else {},
         errors                = all_errors,
     )
 

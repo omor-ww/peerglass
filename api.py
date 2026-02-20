@@ -474,6 +474,30 @@ async def ipv4_stats(
         default=None,
         description="Filter to one RIR: AFRINIC, APNIC, ARIN, LACNIC, or RIPE. Leave empty for all 5.",
     ),
+    include_blocks: bool = Query(
+        default=False,
+        description="Include raw delegated IPv4 block rows. Requires rir to be set.",
+    ),
+    status: Optional[str] = Query(
+        default=None,
+        description="Optional status filter for block rows: allocated, assigned, available (free is normalized).",
+    ),
+    country: Optional[str] = Query(
+        default=None,
+        description="Optional 2-letter country filter for block rows (e.g. GH, ZA).",
+    ),
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=5000,
+        description="Maximum block rows to return when include_blocks=true.",
+    ),
+    offset: int = Query(
+        default=0,
+        ge=0,
+        le=1_000_000,
+        description="Pagination offset for block rows when include_blocks=true.",
+    ),
     format: str = FORMAT_QUERY,
 ):
     """
@@ -483,12 +507,26 @@ async def ipv4_stats(
     Use this to track IPv4 exhaustion, IPv6 adoption, and ASN growth.
     """
     rir_filter = (rir or "").upper().strip() or "all"
-    cache_key  = cache_module.make_ipv4stat_key(rir_filter)
+    cache_key  = cache_module.make_ipv4stat_key(
+        rir_filter=rir_filter,
+        include_blocks=include_blocks,
+        status_filter=status,
+        country_filter=country,
+        limit=limit,
+        offset=offset,
+    )
     cached     = cache_module.get(cache_key)
     if cached:
         return _resp(cached["markdown"], cached["json"], format)
 
-    result = await rir_client.get_global_ipv4_stats(rir_filter=rir or None)
+    result = await rir_client.get_global_ipv4_stats(
+        rir_filter=rir or None,
+        include_blocks=include_blocks,
+        status_filter=status,
+        country_filter=country,
+        limit=limit,
+        offset=offset,
+    )
     md  = format_ipv4_stats_md(result)
     jsn = to_json(result)
     cache_module.set(cache_key, {"markdown": md, "json": jsn}, cache_module.TTL_IPV4STAT)

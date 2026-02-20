@@ -91,8 +91,23 @@ def make_history_key(resource: str) -> str:
 def make_transfer_key(resource: str) -> str:
     return _make_key("transfer", resource.lower().strip())
 
-def make_ipv4stat_key(rir_filter: str = "all") -> str:
-    return _make_key("ipv4stat", rir_filter.lower())
+def make_ipv4stat_key(
+    rir_filter: str = "all",
+    include_blocks: bool = False,
+    status_filter: Optional[str] = None,
+    country_filter: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> str:
+    return _make_key(
+        "ipv4stat",
+        rir_filter.lower(),
+        bool(include_blocks),
+        (status_filter or "").lower(),
+        (country_filter or "").upper(),
+        int(limit),
+        int(offset),
+    )
 
 def make_overview_key(prefix: str) -> str:
     return _make_key("overview", prefix.lower().strip())
