@@ -148,7 +148,7 @@ Interactive docs at: http://localhost:8000/docs
 |------|-------------|-----------|
 | `rir_prefix_history` | Full ownership timeline for any prefix or ASN | 12 hours |
 | `rir_detect_transfers` | Detect cross-org / cross-RIR resource transfers | 12 hours |
-| `rir_ipv4_stats` | Global IPv4/IPv6/ASN exhaustion dashboard | 24 hours |
+| `rir_ipv4_stats` | Global IPv4/IPv6/ASN dashboard + optional delegated IPv4 block listing (`include_blocks`, filters, pagination) | 24 hours |
 | `rir_prefix_overview` | Prefix hierarchy: parent, children, BGP status | 1 hour |
 
 ### Phase 4 — Peering, IXPs, Health & Monitoring
@@ -196,6 +196,9 @@ curl "http://localhost:8000/v1/rpki?prefix=1.1.1.0/24&asn=AS13335"
 
 # Get BGP peers for Google
 curl http://localhost:8000/v1/peering/AS15169
+
+# List AFRINIC delegated IPv4 blocks (allocated + Ghana), paginated
+curl "http://localhost:8000/v1/stats/ipv4?rir=AFRINIC&include_blocks=true&status=allocated&country=GH&limit=5&offset=0&format=json"
 ```
 
 Interactive docs (Swagger UI): http://localhost:8000/docs

@@ -9,6 +9,7 @@ import time
 import traceback
 
 import httpx
+import rir_client
 
 GREEN  = "\033[92m"
 RED    = "\033[91m"
@@ -246,6 +247,71 @@ async def test_iana_bootstrap_all_rirs():
         fail("IANA bootstrap consistency", traceback.format_exc()[-120:])
 
 
+# ── TEST 14: PeerGlass delegated IPv4 blocks feature ─────────
+async def test_ipv4_blocks_feature():
+    section("TEST 14 — PeerGlass Delegated IPv4 Blocks (AFRINIC)")
+    print("  Expect: include_blocks returns paginated rows with status/country filtering")
+
+    try:
+        # Base feature check: include blocks for AFRINIC with status filter
+        result = await rir_client.get_global_ipv4_stats(
+            rir_filter="AFRINIC",
+            include_blocks=True,
+            status_filter="allocated",
+            limit=3,
+            offset=0,
+        )
+
+        if result.blocks_returned > 0:
+            ok(
+                "Delegated blocks returned",
+                f"returned={result.blocks_returned}, total={result.blocks_total}"
+            )
+        else:
+            fail("Delegated blocks returned", "No rows returned for AFRINIC allocated blocks")
+
+        if result.blocks_total >= result.blocks_returned:
+            ok("Pagination metadata valid", f"total={result.blocks_total} >= returned={result.blocks_returned}")
+        else:
+            fail("Pagination metadata", f"total={result.blocks_total}, returned={result.blocks_returned}")
+
+        if result.ipv4_blocks and all(b.rir == "AFRINIC" for b in result.ipv4_blocks):
+            ok("All rows scoped to AFRINIC")
+        else:
+            fail("RIR scope", "Found non-AFRINIC rows in AFRINIC query")
+
+        if result.ipv4_blocks and all(b.status == "allocated" for b in result.ipv4_blocks):
+            ok("Status filter applied", "all rows status=allocated")
+        else:
+            fail("Status filter", "At least one row is not allocated")
+
+        # Country filter check
+        gh = await rir_client.get_global_ipv4_stats(
+            rir_filter="AFRINIC",
+            include_blocks=True,
+            status_filter="allocated",
+            country_filter="GH",
+            limit=3,
+            offset=0,
+        )
+        if gh.blocks_returned == 0:
+            skip("Country filter GH", "No matching rows in current snapshot")
+        elif all((b.country or "") == "GH" for b in gh.ipv4_blocks):
+            ok("Country filter applied", f"rows={gh.blocks_returned}, country=GH")
+        else:
+            fail("Country filter", "Found non-GH rows in GH-filtered result")
+
+        # Validation behavior check
+        invalid = await rir_client.get_global_ipv4_stats(include_blocks=True)
+        if invalid.errors and "requires rir_filter" in invalid.errors[0]:
+            ok("include_blocks requires rir_filter")
+        else:
+            fail("include_blocks validation", f"Unexpected errors: {invalid.errors}")
+
+    except Exception:
+        fail("PeerGlass delegated IPv4 blocks", traceback.format_exc()[-120:])
+
+
 # ── TEST 6: Announced prefixes — AS13335 ──────────────────────
 async def test_announced_prefixes():
     section("TEST 6 — RIPE Stat Announced Prefixes: AS13335")
@@ -467,6 +533,7 @@ async def main():
     await test_asn_neighbours()
     await test_peeringdb_ixp()
     await test_iana_bootstrap_all_rirs()
+    await test_ipv4_blocks_feature()
 
     elapsed = time.time() - t0
 
