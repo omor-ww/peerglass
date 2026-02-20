@@ -1,5 +1,7 @@
 # 🔍 PeerGlass — Internet Resource Intelligence
 
+![PeerGlass Branding](gitlab-repo-img-pg-01.jpg)
+
 > **Protocol note:** PeerGlass uses **RDAP** (Registration Data Access Protocol —
 > RFC 7480–7484). RDAP (RFC 7480–7484) is the IANA-mandated JSON successor
 > to legacy plain-text WHOIS.
