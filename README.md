@@ -448,6 +448,98 @@ fi
 
 ---
 
+### Verification — Source-Pinned Retrieval vs Model Recall
+
+If you want to verify that PeerGlass is deterministic and source-pinned
+(real API retrieval) rather than model recall, run this quick check.
+
+1. Ask ChatGPT to fetch all 5 RIR RDAP endpoints for `1.1.1.1` and return raw JSON only.
+2. Repeat the exact same prompt multiple times.
+3. Compare ChatGPT output against direct endpoint results below.
+
+Use this prompt in ChatGPT:
+
+```text
+For IP 1.1.1.1, query these exact RDAP endpoints and return ONLY JSON:
+
+- AFRINIC: https://rdap.afrinic.net/rdap/ip/1.1.1.1
+- APNIC: https://rdap.apnic.net/ip/1.1.1.1
+- ARIN: https://rdap.arin.net/registry/ip/1.1.1.1
+- LACNIC: https://rdap.lacnic.net/rdap/ip/1.1.1.1
+- RIPE: https://rdap.db.ripe.net/ip/1.1.1.1
+
+Output schema per RIR:
+{
+  "rir": "...",
+  "url": "...",
+  "http_status": ...,
+  "objectClassName": "... or null",
+  "handle": "... or null",
+  "error": "... or null"
+}
+
+Do not summarize. Do not infer.
+```
+
+Ground-truth script (direct endpoint calls):
+
+```bash
+python - <<'PY'
+import asyncio
+import json
+import httpx
+
+ENDPOINTS = {
+    "AFRINIC": "https://rdap.afrinic.net/rdap/ip/1.1.1.1",
+    "APNIC": "https://rdap.apnic.net/ip/1.1.1.1",
+    "ARIN": "https://rdap.arin.net/registry/ip/1.1.1.1",
+    "LACNIC": "https://rdap.lacnic.net/rdap/ip/1.1.1.1",
+    "RIPE": "https://rdap.db.ripe.net/ip/1.1.1.1",
+}
+
+async def query_one(client, rir, url):
+    try:
+        r = await client.get(url, timeout=20)
+        content_type = r.headers.get("content-type", "")
+        data = r.json() if "json" in content_type else {}
+        return {
+            "rir": rir,
+            "url": url,
+            "http_status": r.status_code,
+            "objectClassName": data.get("objectClassName"),
+            "handle": data.get("handle"),
+            "error": None,
+        }
+    except Exception as exc:
+        return {
+            "rir": rir,
+            "url": url,
+            "http_status": None,
+            "objectClassName": None,
+            "handle": None,
+            "error": str(exc),
+        }
+
+async def main():
+    headers = {
+        "Accept": "application/rdap+json",
+        "User-Agent": "peerglass/verification",
+    }
+    async with httpx.AsyncClient(headers=headers, follow_redirects=True) as client:
+        results = await asyncio.gather(*[
+            query_one(client, rir, url) for rir, url in ENDPOINTS.items()
+        ])
+    print(json.dumps(results, indent=2))
+
+asyncio.run(main())
+PY
+```
+
+If ChatGPT outputs are inconsistent or fail to fetch while direct calls are stable,
+that difference is exactly why PeerGlass uses deterministic source-pinned retrieval.
+
+---
+
 ### Adding Your Own Integration Tests
 
 The `test_integration.py` script is designed to be extended. Each test follows
