@@ -33,7 +33,7 @@ IANA (the root) delegates large blocks to 5 regional bodies:
 ### Install
 
 ```bash
-git clone https://github.com/peerglass/peerglass
+git clone https://github.com/duksh/peerglass
 cd peerglass
 pip install -e .
 ```
