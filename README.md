@@ -38,10 +38,27 @@ cd peerglass
 pip install -e .
 ```
 
-### Configure Claude Desktop (MCP)
+### Configure MCP Clients (Claude and others)
 
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+PeerGlass runs as a standard MCP stdio server (`mcp.run()` in `server.py`),
+so any MCP-compatible AI client can use it — not just Claude Desktop.
+
+For Claude Desktop, edit
+`~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "peerglass": {
+      "command": "peerglass",
+      "args": []
+    }
+  }
+}
+```
+
+If `peerglass` is not in your PATH, use:
 
 ```json
 {
