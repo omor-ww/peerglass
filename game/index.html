@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#080f18" />
+  <title>The Infinite Grimoire — A 2.5D Fantasy RPG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <main id="game-shell">
+    <canvas id="world" aria-label="Game world"></canvas>
+    <div class="vignette"></div>
+    <section class="start-screen" id="startScreen" aria-label="Start game">
+      <div class="start-card">
+        <div class="start-emblem">✦</div>
+        <div class="start-kicker">A 2.5D FANTASY ADVENTURE</div>
+        <h1>THE INFINITE<br><span>GRIMOIRE</span></h1>
+        <p>One world. Sixty spells. Your story begins now.</p>
+        <button id="playNow" class="play-now">▶ &nbsp; PLAY NOW</button>
+        <small>WASD / TOUCH TO MOVE &nbsp; · &nbsp; SPACE TO CAST</small>
+      </div>
+    </section>
+    <header class="topbar">
+      <div class="brand"><div class="sigil">✦</div><div><div class="brand-title">THE INFINITE <b>GRIMOIRE</b></div><div class="brand-sub">A LIVING WORLD • CHAPTER I</div></div></div>
+      <div class="region-pill"><span class="live-dot"></span><div><small>YOU ARE IN</small><strong>Verdant Kingdom</strong></div><span class="coords" id="coords">(0, 0)</span></div>
+      <div class="top-actions"><button class="icon-btn" id="mapToggle" title="World map">⌖</button><button class="icon-btn" id="saveBtn" title="Save game">⤓</button><button class="icon-btn" id="settingsBtn" title="Settings">⚙</button></div>
+    </header>
+    <aside class="left-rail">
+      <button class="rail-btn active" id="bookBtn"><span>▤</span><small>Grimoire</small></button>
+      <button class="rail-btn" id="questBtn"><span>⚑</span><small>Quests</small></button>
+      <button class="rail-btn" id="inventoryBtn"><span>◇</span><small>Satchel</small></button>
+      <div class="rail-spacer"></div><div class="voice-indicator" id="voiceStatus"><span class="mic-icon">◉</span><small>VOICE<br>READY</small></div>
+    </aside>
+    <section class="player-card glass">
+      <div class="avatar" aria-hidden="true">✦</div><div class="player-meta"><div class="player-name">Tenmaku Hisashi <span>Lv. <b id="level">12</b></span></div><div class="title-line">THE GRIMOIRE BEARER</div>
+        <div class="stat-row"><span class="stat-label">HP</span><div class="bar"><i id="hpBar" class="hp-fill"></i></div><span id="hpText">100 / 100</span></div>
+        <div class="stat-row"><span class="stat-label">MP</span><div class="bar"><i id="mpBar" class="mp-fill"></i></div><span id="mpText">100 / 100</span></div></div>
+    </section>
+    <section class="quest-toast glass"><span class="quest-icon">✧</span><div><small>ACTIVE QUEST</small><strong id="questName">A Spark in the Wild</strong><p id="questProgress">Find the waystone · 0 / 1</p></div><span class="quest-arrow">›</span></section>
+    <section class="minimap glass"><div class="mini-head"><span>FIELD MAP</span><span class="north">N ↑</span></div><canvas id="miniCanvas" width="160" height="116"></canvas><div class="mini-footer"><i></i> Verdant Kingdom</div></section>
+    <section class="spell-hud glass"><div class="spell-icon" id="selectedGlyph">✹</div><div class="spell-meta"><small>SELECTED SPELL</small><strong id="selectedName">Fireball</strong><span id="selectedCost">25 MP · 6s cooldown</span></div><button id="castBtn" class="cast-btn" title="Cast selected spell">➤</button><div class="key-hint">SPACE</div></section>
+    <div class="toast" id="toast"></div>
+    <div class="crosshair" id="crosshair">✦</div>
+    <section class="mobile-controls" id="mobileControls"><div class="stick" id="stick"><div class="stick-knob" id="stickKnob"></div></div><button class="mobile-action book-action" id="mobileBook">▤</button><button class="mobile-action attack-action" id="mobileAttack">✦</button><button class="mobile-action dodge-action" id="mobileDodge" aria-label="Dodge">↗</button><button class="mobile-action interact-action" id="mobileInteract" aria-label="Interact">E</button><button class="mobile-action sprint-action" id="mobileSprint" aria-label="Toggle sprint">»</button></section>
+    <div class="orientation-tip">For the best view, rotate your device to landscape.</div>
+    <div class="overlay" id="overlay">
+      <div class="book-window panel" id="bookPanel">
+        <div class="book-header"><div class="book-mark">✦</div><div><small>THE ANCIENT ARTIFACT</small><h1>The Infinite Grimoire</h1></div><button class="close-btn" data-close>×</button></div>
+        <div class="book-layout"><nav class="spell-index"><div class="index-title">SPELL INDEX <span id="spellCount">60</span></div><div id="spellList" class="spell-list"></div></nav><article class="spell-page"><div class="page-tabs"><button class="page-tab active" data-page="0">I · ILLUSTRATION</button><button class="page-tab" data-page="1">II · DETAILS</button><span class="tier-tag">TIER III</span></div><div class="page-content"><div class="spell-art" id="spellArt"><div class="art-rune">✹</div><div class="art-orbit"></div><div class="art-core"></div><span class="art-caption">ANCIENT FIRE MAGIC</span></div><div class="spell-info"><div class="element-label" id="elementLabel">FIRE MAGIC</div><h2 id="bookSpellName">Fireball</h2><p class="spell-desc" id="spellDescription">A blazing projectile that seeks its target and bursts into living flame on impact.</p><div class="detail-grid"><div><small>RANGE</small><b id="spellRange">30 m</b></div><div><small>COOLDOWN</small><b id="spellCooldown">6 sec</b></div><div><small>MANA COST</small><b id="spellMana">25 MP</b></div><div><small>POWER</small><b id="spellPower">82</b></div></div><div class="upgrade-box"><span>✧</span><div><b>Mastery growth</b><small>Cast spells to unlock new ranks and empower their effects.</small></div></div><button class="select-spell" id="selectSpell">✦ &nbsp; SELECT THIS SPELL</button><div class="selected-note" id="selectedNote">Selected spells can be spoken aloud or cast with the action button.</div></div></div><div class="book-footer"><button id="prevSpell">← PREVIOUS</button><span id="pageCounter">01 / 60</span><button id="nextSpell">NEXT →</button></div></article></div>
+        <div class="book-bottom"><span>◉ VOICE SPELLCASTING <b id="voiceBookStatus">READY</b></span><span>Speak the highlighted spell name to cast</span><button id="voiceToggle">ENABLE MIC</button></div>
+      </div>
+      <div class="small-panel panel" id="mapPanel"><div class="modal-title"><div><small>YOUR JOURNEY</small><h2>World Chart</h2></div><button class="close-btn" data-close>×</button></div><canvas id="worldMap" width="600" height="340"></canvas><div class="map-legend"><span>● You are here</span><span>◇ Discovered waystone</span><span>○ Unexplored</span></div></div>
+      <div class="small-panel panel" id="questPanel"><div class="modal-title"><div><small>YOUR ADVENTURE</small><h2>Quest Journal</h2></div><button class="close-btn" data-close>×</button></div><div class="journal-item"><b>✧ &nbsp;A Spark in the Wild</b><p>Follow the old path to the overgrown waystone. They say it still remembers the first mages.</p><small>MAIN STORY · IN PROGRESS</small></div><div class="journal-item faded"><b>◇ &nbsp;A Merchant's Request</b><p>Speak with Elena in Oakridge Village.</p><small>AVAILABLE NEARBY</small></div></div>
+      <div class="small-panel panel" id="inventoryPanel"><div class="modal-title"><div><small>YOUR BELONGINGS</small><h2>Adventurer's Satchel</h2></div><button class="close-btn" data-close>×</button></div><div class="inventory-grid" id="inventoryGrid"></div></div>
+      <div class="small-panel panel" id="settingsPanel"><div class="modal-title"><div><small>GAME OPTIONS</small><h2>Settings</h2></div><button class="close-btn" data-close>×</button></div><div class="setting-line"><span>Graphics quality</span><select id="quality"><option>Ultra</option><option>High</option><option>Medium</option><option>Low</option></select></div><div class="setting-line"><span>Camera sensitivity</span><input type="range" min="2" max="10" value="6" id="sensitivity"></div><div class="setting-line"><span>Voice recognition</span><button id="settingsVoice">Enable microphone</button></div><p class="settings-note">Progress saves automatically on this device. Voice recognition requires a browser that supports speech input.</p></div>
+    </div>
+    <div class="mobile-tip" id="mobileTip">WASD / arrows to move · drag to look · Space to cast · E to interact</div>
+    <div id="damageFlash"></div>
+  </main>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
